@@ -214,8 +214,7 @@ const server = https.createServer(settings.https, (req, res) => {
                     if (error) {
                         process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
                         reject(1)
-                    }
-                    else {
+                    } else {
                         if(results.affectedRows < 1) sqlError = 1
                         resolve(0)
                     }
@@ -235,8 +234,7 @@ const server = https.createServer(settings.https, (req, res) => {
                     if (error) {
                         process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
                         reject(1)
-                    }
-                    else {
+                    } else {
                         if(results.affectedRows < 1) sqlError = 1
                         resolve(0)
                     }
