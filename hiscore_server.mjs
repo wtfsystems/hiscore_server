@@ -43,13 +43,13 @@ const settings = {
 /**
  * Server start
  */
-process.stdout.write(`\nStarting High Score Server`)
-process.stdout.write(`Press Ctrl+C to exit\n`)
+process.stdout.write(`\nStarting High Score Server\n`)
+process.stdout.write(`Press Ctrl+C to exit\n\n`)
 
 const server = https.createServer(settings.https, (req, res) => {
-    req.on('error', (error) => { process.stdout.write(error) })
+    req.on('error', (error) => { process.stdout.write(`${error}\n`) })
 
-    process.stdout.write(`Received connection from ${req.socket.remoteAddress}`)
+    process.stdout.write(`Received connection from ${req.socket.remoteAddress}\n`)
 
     //  Which command to run - we also ignore it if no arguments are passed
     const cmdRoute = req.url.substring(1, req.url.indexOf('?'))
@@ -73,7 +73,7 @@ const server = https.createServer(settings.https, (req, res) => {
         //////////////////////////////////
         (async () => {
             if(cmdArgs['game-key'] === undefined) return 1
-            process.stdout.write(`Generating session key for ${req.socket.remoteAddress}`)
+            process.stdout.write(`Generating session key for ${req.socket.remoteAddress}\n`)
             const sqlconn = mysql.createConnection(settings.mysql)
             sqlconn.connect()
 
@@ -84,7 +84,7 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ cmdArgs['game-key'] ], (error, results) =>
                 {
                     if (error) {
-                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}\n`)
                         reject(1)
                     }
                     else {
@@ -97,7 +97,7 @@ const server = https.createServer(settings.https, (req, res) => {
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                process.stdout.write(`Key rejected for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Key rejected for ${req.socket.remoteAddress}\n`)
                 return 1
             }
 
@@ -118,10 +118,10 @@ const server = https.createServer(settings.https, (req, res) => {
             sqlError = 0
             await new Promise((resolve, reject) => {
                 sqlconn.query(settings.sqlQueries.SAVESESSIONKEY,
-                    [ Date.toString(), hash ], (error, results) =>
+                    [ Date.toLocaleString(), hash ], (error, results) =>
                 {
                     if (error) {
-                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}\n`)
                         reject(1)
                     }
                     else {
@@ -134,7 +134,7 @@ const server = https.createServer(settings.https, (req, res) => {
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                process.stdout.write(`Session key not saved for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Session key not saved for ${req.socket.remoteAddress}\n`)
                 return 1
             }
 
@@ -149,7 +149,7 @@ const server = https.createServer(settings.https, (req, res) => {
             if(cmdArgs['game-key'] === undefined) return 1
             if(cmdArgs['session-key'] === undefined) return 1
             if(cmdArgs['data'] === undefined) return 1
-            process.stdout.write(`Logging session data for ${req.socket.remoteAddress}`)
+            process.stdout.write(`Logging session data for ${req.socket.remoteAddress}\n`)
             const sqlconn = mysql.createConnection(settings.mysql)
             sqlconn.connect()
 
@@ -161,7 +161,7 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ cmdArgs['game-key'] ], (error, results) =>
                 {
                     if (error) {
-                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}\n`)
                         reject(1)
                     }
                     else {
@@ -177,7 +177,7 @@ const server = https.createServer(settings.https, (req, res) => {
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                process.stdout.write(`Key rejected for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Key rejected for ${req.socket.remoteAddress}\n`)
                 return 1
             }
 
@@ -188,7 +188,7 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ cmdArgs['session-key'] ], (error, results) =>
                 {
                     if (error) {
-                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}\n`)
                         reject(1)
                     }
                     else {
@@ -201,7 +201,7 @@ const server = https.createServer(settings.https, (req, res) => {
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                process.stdout.write(`Session key not found for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Session key not found for ${req.socket.remoteAddress}\n`)
                 return 1
             }
 
@@ -212,7 +212,7 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ cmdArgs['session-key'] ], (error, results) =>
                 {
                     if (error) {
-                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}\n`)
                         reject(1)
                     } else {
                         if(results.affectedRows < 1) sqlError = 1
@@ -222,17 +222,17 @@ const server = https.createServer(settings.https, (req, res) => {
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 //  Report error, but continue anyway
-                process.stdout.write(`Session key not deleted for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Session key not deleted for ${req.socket.remoteAddress}\n`)
             }
 
             //  On success, write game data to database
             sqlError = 0
             await new Promise((resolve, reject) => {
                 sqlconn.query(settings.sqlQueries.SAVESESSIONDATA,
-                    [ gameID, Date.toString(), cmdArgs['data'] ], (error, results) =>
+                    [ gameID, Date.toLocaleString(), cmdArgs['data'] ], (error, results) =>
                 {
                     if (error) {
-                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}\n`)
                         reject(1)
                     } else {
                         if(results.affectedRows < 1) sqlError = 1
@@ -242,7 +242,7 @@ const server = https.createServer(settings.https, (req, res) => {
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                process.stdout.write(`Session key not saved for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Session key not saved for ${req.socket.remoteAddress}\n`)
                 return 1
             }
 
@@ -252,7 +252,7 @@ const server = https.createServer(settings.https, (req, res) => {
     } else {  //  Everything else displays error code 1
         res.end(`1`)
     }
-    process.stdout.write(`${req.socket.remoteAddress} disconnected`)
+    process.stdout.write(`${req.socket.remoteAddress} disconnected\n`)
 })
 
-server.listen(settings.port, () => { process.stdout.write(`Running server on port ${settings.port}\n`) })
+server.listen(settings.port, () => { process.stdout.write(`Running server on port ${settings.port}\n\n`) })
