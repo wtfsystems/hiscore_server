@@ -28,18 +28,13 @@ const settings = {
     },
 
     //  MySQL server settings
-    mysql: {
-        host: 'localhost',      //  Hostname for sql database
-        user: 'user',           //  Username for sql database
-        password: 'password',   //  Password for sql database
-        database: 'hiscore_db'  //  Database name to write to
-    },
+    mysql: JSON.parse(fs.readFileSync('sqlcreds.json')),
 
     //  SQL queries used in the script
     sqlQueries: {
-        GETGAMEKEY: 'SELECT Id AS gameid FROM game_keys WHERE Gamekey LIKE ?',
+        GETGAMEKEY: 'SELECT Id AS gameid FROM game_keys WHERE Gamekey=?',
         SAVESESSIONKEY: 'INSERT INTO session_keys (Date, Sessionkey) VALUES (?, ?)',
-        VERIFYSESSIONKEY: 'SELECT Sessionkey FROM session_keys WHERE Sessionkey LIKE ?',
+        VERIFYSESSIONKEY: 'SELECT Sessionkey FROM session_keys WHERE Sessionkey=?',
         DELETESESSIONKEY: 'DELETE FROM session_keys WHERE Sessionkey=?',
         SAVESESSIONDATA: 'INSERT INTO session_data (Id, Date, Data) VALUES (?, ?, ?)'
     }
@@ -48,13 +43,13 @@ const settings = {
 /**
  * Server start
  */
-console.log(`\nStarting High Score Server`)
-console.log(`Press Ctrl+C to exit\n`)
+process.stdout.write(`\nStarting High Score Server`)
+process.stdout.write(`Press Ctrl+C to exit\n`)
 
 const server = https.createServer(settings.https, (req, res) => {
-    req.on('error', (error) => { console.error(error) })
+    req.on('error', (error) => { process.stdout.write(error) })
 
-    console.log(`Received connection from ${req.socket.remoteAddress}`)
+    process.stdout.write(`Received connection from ${req.socket.remoteAddress}`)
 
     //  Which command to run - we also ignore it if no arguments are passed
     const cmdRoute = req.url.substring(1, req.url.indexOf('?'))
@@ -78,7 +73,7 @@ const server = https.createServer(settings.https, (req, res) => {
         //////////////////////////////////
         (async () => {
             if(cmdArgs['game-key'] === undefined) return 1
-            console.log(`Generating session key for ${req.socket.remoteAddress}`)
+            process.stdout.write(`Generating session key for ${req.socket.remoteAddress}`)
             const sqlconn = mysql.createConnection(settings.mysql)
             sqlconn.connect()
 
@@ -89,21 +84,20 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ cmdArgs['game-key'] ], (error, results) =>
                 {
                     if (error) {
-                        console.log(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
                         reject(1)
                     }
                     else {
                         if(results.length === 0) {
                             sqlError = 1
                             reject(1)
-                        }
-                        resolve(0)
+                        } else resolve(0)
                     }
                 })
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                console.log(`Key rejected for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Key rejected for ${req.socket.remoteAddress}`)
                 return 1
             }
 
@@ -127,21 +121,20 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ Date.toString(), hash ], (error, results) =>
                 {
                     if (error) {
-                        console.log(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
                         reject(1)
                     }
                     else {
                         if(results.length === 0) {
                             sqlError = 1
                             reject(1)
-                        }
-                        resolve(0)
+                        } else resolve(0)
                     }
                 })
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                console.log(`Session key not saved for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Session key not saved for ${req.socket.remoteAddress}`)
                 return 1
             }
 
@@ -156,7 +149,7 @@ const server = https.createServer(settings.https, (req, res) => {
             if(cmdArgs['game-key'] === undefined) return 1
             if(cmdArgs['session-key'] === undefined) return 1
             if(cmdArgs['data'] === undefined) return 1
-            console.log(`Logging session data for ${req.socket.remoteAddress}`)
+            process.stdout.write(`Logging session data for ${req.socket.remoteAddress}`)
             const sqlconn = mysql.createConnection(settings.mysql)
             sqlconn.connect()
 
@@ -168,22 +161,23 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ cmdArgs['game-key'] ], (error, results) =>
                 {
                     if (error) {
-                        console.log(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
                         reject(1)
                     }
                     else {
                         if(results.length === 0) {
                             sqlError = 1
                             reject(1)
+                        } else {
+                            gameID = results[0].gameid // store game ID
+                            resolve(0)
                         }
-                        gameID = results[0].gameid // store game ID
-                        resolve(0)
                     }
                 })
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                console.log(`Key rejected for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Key rejected for ${req.socket.remoteAddress}`)
                 return 1
             }
 
@@ -194,21 +188,20 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ cmdArgs['session-key'] ], (error, results) =>
                 {
                     if (error) {
-                        console.log(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
                         reject(1)
                     }
                     else {
                         if(results.length === 0) {
                             sqlError = 1
                             reject(1)
-                        }
-                        resolve(0)
+                        } else resolve(0)
                     }
                 })
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                console.log(`Session key not found for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Session key not found for ${req.socket.remoteAddress}`)
                 return 1
             }
 
@@ -219,7 +212,7 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ cmdArgs['session-key'] ], (error, results) =>
                 {
                     if (error) {
-                        console.log(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
                         reject(1)
                     }
                     else {
@@ -230,7 +223,7 @@ const server = https.createServer(settings.https, (req, res) => {
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 //  Report error, but continue anyway
-                console.log(`Session key not deleted for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Session key not deleted for ${req.socket.remoteAddress}`)
             }
 
             //  On success, write game data to database
@@ -240,7 +233,7 @@ const server = https.createServer(settings.https, (req, res) => {
                     [ gameID, Date.toString(), cmdArgs['data'] ], (error, results) =>
                 {
                     if (error) {
-                        console.log(`Error for ${req.socket.remoteAddress}: ${error}`)
+                        process.stdout.write(`Error for ${req.socket.remoteAddress}: ${error}`)
                         reject(1)
                     }
                     else {
@@ -251,7 +244,7 @@ const server = https.createServer(settings.https, (req, res) => {
             }).catch(res => { sqlError = 1 })
             if(sqlError === 1) {
                 sqlconn.end()
-                console.log(`Session key not saved for ${req.socket.remoteAddress}`)
+                process.stdout.write(`Session key not saved for ${req.socket.remoteAddress}`)
                 return 1
             }
 
@@ -261,7 +254,7 @@ const server = https.createServer(settings.https, (req, res) => {
     } else {  //  Everything else displays error code 1
         res.end(`1`)
     }
-    console.log(`${req.socket.remoteAddress} disconnected`)
+    process.stdout.write(`${req.socket.remoteAddress} disconnected`)
 })
 
-server.listen(settings.port, () => { console.log(`Running server on port ${settings.port}\n`) })
+server.listen(settings.port, () => { process.stdout.write(`Running server on port ${settings.port}\n`) })
